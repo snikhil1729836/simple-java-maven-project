@@ -1,0 +1,32 @@
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: simple-java-app
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: simple-java-app
+  template:
+    metadata:
+      labels:
+        app: simple-java-app
+    spec:
+      containers:
+      - name: simple-java-app
+        image: myacr.azurecr.io/simple-java-app:latest
+        ports:
+        - containerPort: 8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: simple-java-service
+spec:
+  type: LoadBalancer
+  selector:
+    app: simple-java-app
+  ports:
+    - port: 80
+      targetPort: 8080
