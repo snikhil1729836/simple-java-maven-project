@@ -3,6 +3,7 @@ pipeline {
 
     tools {
         maven 'Maven-3.9.9'
+        jdk 'JDK_21'
     }
 
     environment {
@@ -21,6 +22,20 @@ pipeline {
         stage('Maven Build') {
             steps {
                 sh 'mvn clean package'
+            }
+        }
+
+        ✅ stage('Validate Environment') {
+            steps {
+                sh '''
+                    echo "===== VALIDATING BUILD ENVIRONMENT ====="
+                    echo "Java Version:"
+                    java -version
+                    echo "Maven Version:"
+                    mvn -version
+                    echo "JAVA_HOME=$JAVA_HOME"
+                    echo "===== VALIDATION COMPLETE ====="
+                '''
             }
         }
 
