@@ -1,21 +1,49 @@
-
 pipeline {
     agent any
-    tools { maven 'Maven-3.9.9' }
-    environment {
-        ACR_NAME = "myacr"
-        IMAGE_NAME = "simple-java-app"
+
+    tools {
+        maven 'Maven-3.9.9'
     }
+
+    environment {
+        IMAGE_NAME = "simple-java-app"
+        DOCKER_HUB_USERNAME = "snikhil1729"
+    }
+
     stages {
-        stage('Clone') { steps { checkout scm } }
-        stage('Build') { steps { sh 'mvn clean package' } }
-        stage('Docker Build & Push') {
+
+        stage('Clone Repository') {
             steps {
-                sh 'az acr login --name $ACR_NAME'
-                sh 'docker build -t $ACR_NAME.azurecr.io/$IMAGE_NAME:latest .'
-                sh 'docker push $ACR_NAME.azurecr.io/$IMAGE_NAME:latest'
+                checkout scm
             }
         }
-        stage('Deploy to AKS') { steps { sh 'kubectl apply -f k8s-deploy.yml' } }
+
+        stage('Maven Build') {
+            steps {
+                sh 'mvn clean package'
+            }
+        }
+
+        stage('Docker Build & Push') {
+            steps {
+                withCredentials([usernamePassword(
+                    credentialsId: 'dockerhub-credentials',
+                    usernameVariable: 'DH_USER',
+                    passwordVariable: 'DH_TOKEN'
+                )]) {
+                    sh '''
+                        echo $DH_TOKEN | docker login -u $DH_USER --password-stdin
+                        docker build -t $DH_USER/$IMAGE_NAME:latest .
+                        docker push $DH_USER/$IMAGE_NAME:latest
+                    '''
+                }
+            }
+        }
+
+        stage('Deploy to Kubernetes (k3s)') {
+            steps {
+                sh 'kubectl apply -f k8s-deploy.yml'
+            }
+        }
     }
 }
